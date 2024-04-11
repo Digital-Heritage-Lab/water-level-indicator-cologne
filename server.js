@@ -19,44 +19,44 @@ const updateData = async () => {
         const xmlData = await response.text();
         parseString(xmlData, (err, result) => {
             if (err) {
-                console.error('XML verisini JSON\'a çevirme hatasi:', err);
+                console.error('Error converting XML to JSON:', err);
                 return;
             }
             data = result;
-            console.log('Veriler güncellendi:', result);
+            console.log('Data updated:', result);
         });
     } catch (error) {
-        console.error('Veri güncelleme hatasi:', error);
+        console.error('Error updating data:', error);
     }
 };
 
-// 5 dakikada bir güncelleme yapmak için
+// Update data every 5 minutes
 setInterval(updateData, 5 * 60 * 1000);
 
-// CORS middleware'ini genişletelim, herkese izin verelim
+// Expand CORS middleware, allow everyone
 const corsOptions = {
     origin: '*',
 };
 
 app.use(cors(corsOptions));
 
-// Statik dosyaları servis etme
+// Serve static files
 app.use(express.static(path.join(__dirname, 'temp')));
 app.use('/img', express.static(path.join(__dirname, 'img')));
 
-// / endpoint'ini kullanarak index.html dosyasını gönder
+// Send index.html file using the / endpoint
 app.get('/', (req, res) => {
     const indexHtmlPath = path.join(__dirname, 'temp', 'index.html');
     res.sendFile(indexHtmlPath);
 });
 
-// API endpoint'i
+// API endpoint
 app.get('/api/data', async (req, res) => {
     res.json(data);
 });
 
 app.listen(port, () => {
-    console.log(`Server ${port} portunda çalışıyor...`);
+    console.log(`Server is running on port ${port}...`);
 });
 
-updateData();
+updateData(); // Initial data update

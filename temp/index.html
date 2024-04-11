@@ -103,27 +103,27 @@
         </tbody>
     </table>
     <script>
-        const getVeriler = async () => {
+        const getDatas = async () => {
             try {
                 const response = await fetch('/api/data');
-                const veriler = await response.json();
+                const data = await response.json();
                 
-                const waterLevel = parseFloat(veriler.Hochwasserpegel.Pegel[0].replace(',', '.'));
+                const waterLevel = parseFloat(data.Hochwasserpegel.Pegel[0].replace(',', '.'));
                 const rectangle = document.getElementById('rectangle');
 
-                // Veriye göre rectangle'ın boyutunu ayarla
+                // Adjust the size of the rectangle based on the data
                 if (waterLevel > 1.2) {
-                    rectangle.style.height = '90px'; // Maksimum boyut 90px
+                    rectangle.style.height = '90px'; // Maximum height is 90px
                 } else {
-                    const newHeight = waterLevel * 75; // Örnek bir boyut hesaplama
+                    const newHeight = waterLevel * 75; // Example size calculation
                     rectangle.style.height = `${newHeight}px`;
                 }
 
-                // Diğer verileri göster
-                document.getElementById('dateTimeData').textContent = `${veriler.Hochwasserpegel.Datum[0]} - ${veriler.Hochwasserpegel.Uhrzeit[0]}`;
-                document.getElementById('waterLevelData').textContent = veriler.Hochwasserpegel.Pegel[0].replace('.', ','); // Virgüllü göstermek için
+                // Display other data
+                document.getElementById('dateTimeData').textContent = `${data.Hochwasserpegel.Datum[0]} - ${data.Hochwasserpegel.Uhrzeit[0]}`;
+                document.getElementById('waterLevelData').textContent = data.Hochwasserpegel.Pegel[0].replace('.', ','); 
                 const imgElement = document.createElement('img');
-                const imageName = veriler.Hochwasserpegel.Grafik[0];
+                const imageName = data.Hochwasserpegel.Grafik[0];
                 imgElement.src = `img/${imageName}`;
                 imgElement.alt = 'Hochwasser Image';
                 document.getElementById('imageData').innerHTML = '';
@@ -140,8 +140,8 @@
             }
         };
 
-        setInterval(getVeriler, 5 * 60 * 1000);
-        getVeriler();
+        setInterval(getDatas, 5 * 60 * 1000);
+        getDatas();
     </script>
 </body>
 </html>
