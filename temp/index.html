@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cologne Water Level Indicator</title>
+    <title>Mikveh Real Time Water Level Forecasts</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -78,15 +78,16 @@
     </style>
 </head>
 <body>
-    <h1>Cologne Water Level Data</h1>
+    <h1>Mikveh Real Time Water Level Forecasts</h1>
     <div id="container">
         <div id="rectangle"><h3>Water Level</h3></div>
     </div>
     <table id="veri-tablosu">
         <thead>
             <tr>
-                <th>Gauge</th>
+                <th>Location</th>
                 <th>Water Level (m)</th>
+                <th>Mikveh Water Level(approx.)</th>
                 <th>Date-Time</th>
                 <th>Image</th>
                 <th>Status</th>
@@ -94,8 +95,9 @@
         </thead>
         <tbody>
             <tr>
-                <td>Pagel Köln-Hochwasser</td>
+                <td>Pegel Köln-Hochwasser</td>
                 <td id="waterLevelData"></td>
+                <td id="mikvehWaterLevelData"></td>
                 <td id="dateTimeData"></td>
                 <td id="imageData"></td>
                 <td id="statusData"></td>
@@ -135,6 +137,10 @@
                 }
                 document.getElementById('statusData').textContent = status;
                 document.getElementById('statusData').setAttribute('data-status', status);
+
+                // Calculate and display Mikveh Water Level
+                const mikvehWaterLevel = waterLevel - 1.20; // Water level minus 1.2
+                document.getElementById('mikvehWaterLevelData').textContent = mikvehWaterLevel.toFixed(2); // Display with 2 decimal places
             } catch (error) {
                 console.error('Data Error:', error);
             }
