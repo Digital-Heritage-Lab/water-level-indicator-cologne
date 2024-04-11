@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veri Gösterimi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; /* Sayfa kenar boşluklarını sıfırla */
+            padding: 0; /* Sayfa içerisindeki boşlukları sıfırla */
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #veri-tablosu {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Gölgelendirme */
+        }
+
+        #veri-tablosu th,
+        #veri-tablosu td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        #veri-tablosu th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+
+        #veri-tablosu tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #veri-tablosu tr:hover {
+            background-color: #e5e5e5;
+        }
+
+        #container {
+            position: relative;
+            left: 45%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            background-image: url('img/pegel_photo.png');
+            background-repeat: no-repeat;
+            background-size: 250px 500px;
+            width: 250px;
+            height: 500px;
+        }
+
+        #rectangle {
+            width: 300px;
+            height: 90px;
+            background-color: rgba(39, 144, 245, 0.9);
+            transition: height 0.5s;
+            align-self: flex-end;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #statusData[data-status='Not Available for Work'] {
+            color: red;
+        }
+
+        #statusData[data-status='Available for Work'] {
+            color: green;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="rectangle"><h3>Water Level</h3></div>
+    </div>
+    <h1>Hochwasserpegel Verileri</h1>
+    <table id="veri-tablosu">
+        <thead>
+            <tr>
+                <th>Gauge</th>
+                <th>Water Level (m)</th>
+                <th>Date-Time</th>
+                <th>Image</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Pagel Köln-Hochwasser</td>
+                <td id="waterLevelData"></td>
+                <td id="dateTimeData"></td>
+                <td id="imageData"></td>
+                <td id="statusData"></td>
+            </tr>
+        </tbody>
+    </table>
+    <script>
+        const getVeriler = async () => {
+            try {
+                const response = await fetch('/api/data');
+                const veriler = await response.json();
+                
+                const waterLevel = parseFloat(veriler.Hochwasserpegel.Pegel[0].replace(',', '.'));
+                const rectangle = document.getElementById('rectangle');
+
+                // Veriye göre rectangle'ın boyutunu ayarla
+                if (waterLevel > 1.2) {
+                    rectangle.style.height = '90px'; // Maksimum boyut 90px
+                } else {
+                    const newHeight = waterLevel * 75; // Örnek bir boyut hesaplama
+                    rectangle.style.height = `${newHeight}px`;
+                }
+
+                // Diğer verileri göster
+                document.getElementById('dateTimeData').textContent = `${veriler.Hochwasserpegel.Datum[0]} - ${veriler.Hochwasserpegel.Uhrzeit[0]}`;
+                document.getElementById('waterLevelData').textContent = veriler.Hochwasserpegel.Pegel[0].replace('.', ','); // Virgüllü göstermek için
+                const imgElement = document.createElement('img');
+                const imageName = veriler.Hochwasserpegel.Grafik[0];
+                imgElement.src = `img/${imageName}`;
+                imgElement.alt = 'Hochwasser Image';
+                document.getElementById('imageData').innerHTML = '';
+                document.getElementById('imageData').appendChild(imgElement);
+
+                let status = "Not Available for Work";
+                if (waterLevel <= 1.2) {
+                    status = "Available for Work";
+                }
+                document.getElementById('statusData').textContent = status;
+                document.getElementById('statusData').setAttribute('data-status', status);
+            } catch (error) {
+                console.error('Veri getirme hatasi:', error);
+            }
+        };
+
+        setInterval(getVeriler, 5 * 60 * 1000);
+        getVeriler();
+    </script>
+</body>
+</html>
