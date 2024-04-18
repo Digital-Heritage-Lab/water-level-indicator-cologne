@@ -151,7 +151,7 @@
                 document.getElementById('statusData').setAttribute('data-status', status);
 
                 // Calculate and display Mikveh Water Level
-                const mikvehWaterLevel = waterLevel - 1.20; // Water level minus 1.2
+                const mikvehWaterLevel = waterLevel - 1.10; // Water level minus 1.1
                 document.getElementById('mikvehWaterLevelData').textContent = mikvehWaterLevel.toFixed(2); // Display with 2 decimal places
             } catch (error) {
                 console.error('Data Error:', error);
