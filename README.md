@@ -3,7 +3,7 @@ A program that measures and graphs the water level of the Rhine. You can access 
 
 <h2>Overview</h2>
 
-Welcome to my project developed for the <a href="https://digitalheritagelab.com">Digital Heritage Lab</a>. In this project, we are using the data provided to us by Cologne Open Data to develop an API using Javascript - NodeJS and measure the water levels in Cologne to assess the danger level. In this way, we can have information about whether the water level is dangerous or not and make the work of people working in this field easier. The starting point of the project was the disruption of an archaeological excavation due to the lack of knowledge of the water level. In this way, we produce a solution to a real world problem. 
+Welcome to my project developed for the <a href="https://digitalheritagelab.com">Digital Heritage Lab</a>. In this project, we are using the data provided to us by Cologne Open Data to develop an API using Javascript - NodeJS and measure the water levels in Cologne to assess the danger level. In this way, we can have information about whether the water level is dangerous or not and make the work of people working in this field easier. The starting point of the project was the disruption of an archaeological excavation due to the lack of knowledge of the water level. In this way, we produce a solution to a real world problem. You can find a detailed article about the project by <a href="https://medium.com/@ozcanertan/ein-digitales-fenster-in-die-vergangenheit-7d59ea5a6ef2">clicking here.</a>
 
 ![alt text](https://digitalheritagelab.com/Picture_To_Share/Ekran_goruntusu_2024-04-09_193111.png)
 
