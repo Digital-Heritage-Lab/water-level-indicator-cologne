@@ -28,7 +28,7 @@ Our main goal is to create a program that measures and reports the water levels 
 
 <h2>Contributions</h2>
 
-We welcome your contribution to the project, you can improve the API created, add to it or use it for your projects on different platforms. Feel free to share your ideas with us!
+We welcome your contribution to the project, you can improve the API created, add to it or use it for your projects on different platforms. Feel free to share your ideas with us! <a href="https://github.com/Digital-Heritage-Lab/water-level-indicator-cologne/blob/main/CONTRIBUTING.md">Click Here</a>
 
 <h2>Useful Links</h2>
 
