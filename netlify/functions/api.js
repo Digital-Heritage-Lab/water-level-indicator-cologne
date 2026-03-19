@@ -13,7 +13,7 @@ api.disable("x-powered-by");
 api.use(cors({ origin: "*" }));
 
 // The actual API logic from server.js
-api.get("/data", async (req, res) => {
+api.get(["/data", "/api/data", "/.netlify/functions/api/data"], async (req, res) => {
   try {
     const response = await fetch(
       "https://www.stadt-koeln.de/interne-dienste/hochwasser/pegel_ws.php"
