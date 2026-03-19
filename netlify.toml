@@ -1,0 +1,25 @@
+[build]
+  # We publish the root so that /img and /temp are statically accessible
+  publish = "."
+  command = "npm install"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Redirect requests to /api/data to the Netlify Function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Redirect the root to the index.html page
+[[redirects]]
+  from = "/"
+  to = "/temp/index.html"
+  status = 200
+
+# Fallback for all other routes to return index
+[[redirects]]
+  from = "/*"
+  to = "/temp/index.html"
+  status = 200
