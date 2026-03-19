@@ -4,177 +4,650 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mikveh Real Time Water Level Forecasts</title>
+    <meta name="description" content="Real-time water level monitoring of the Rhine in Cologne and its estimated impact on the Mikveh archaeological site.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:          #eef4fb;
+            --surface:     #ffffff;
+            --surface-2:   #f5f9ff;
+            --border:      #dbe6f4;
+            --blue:        #1d6fb8;
+            --blue-mid:    #2f8de4;
+            --cyan:        #0ea5e9;
+            --teal:        #0d9488;
+            --red:         #dc2626;
+            --green:       #16a34a;
+            --text:        #0f172a;
+            --text-muted:  #64748b;
+            --text-dim:    #94a3b8;
+            --radius:      16px;
+            --shadow:      0 1px 4px rgba(30,60,120,0.07), 0 4px 20px rgba(30,60,120,0.07);
+            --shadow-sm:   0 1px 3px rgba(30,60,120,0.06);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        /* ── Subtle animated background orbs ── */
         body {
-            font-family: Arial, sans-serif;
-            margin: 0; /* Sayfa kenar boşluklarını sıfırla */
-            padding: 0; /* Sayfa içerisindeki boşlukları sıfırla */
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            /* Replace heavy SVG/CSS blurs with simple CSS radial-gradients */
+            background-image: 
+                radial-gradient(circle at 15% 10%, rgba(191, 219, 254, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 85% 60%, rgba(165, 243, 252, 0.25) 0%, transparent 35%);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        h1 {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        #veri-tablosu {
-            width: 80%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Gölgelendirme */
-        }
-
-        #veri-tablosu th,
-        #veri-tablosu td {
-            padding: 12px;
-            text-align: center;
-        }
-
-        #veri-tablosu th {
-            background-color: #f2f2f2;
-            color: #333;
-        }
-
-        #veri-tablosu tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        #veri-tablosu tr:hover {
-            background-color: #e5e5e5;
-        }
-
-        #container {
+        /* ── Page wrapper ── */
+        .page {
             position: relative;
-            left: 45%;
+            z-index: 1;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 24px 80px;
+        }
+
+        /* ── Header ── */
+        header {
             display: flex;
-            justify-content: center;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 44px 0 32px;
+        }
+
+        .header-left h1 {
+            font-size: clamp(1.4rem, 3.5vw, 1.95rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(110deg, #0f172a 30%, var(--blue-mid));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+        }
+
+        .header-left p {
+            margin-top: 7px;
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            display: flex;
             align-items: center;
-            margin-bottom: 20px;
-            background-image: url('img/pegel_photo.png');
-            background-repeat: no-repeat;
-            background-size: 250px 500px;
-            width: 250px;
-            height: 500px;
+            gap: 8px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+            flex-shrink: 0;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:0.45; transform:scale(0.65); }
+        }
+
+        /* ── Weather widget ── */
+        .weather-widget {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            box-shadow: var(--shadow-sm);
+            min-width: 176px;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .weather-widget:hover {
+            box-shadow: var(--shadow);
+            border-color: #b8d4f0;
+        }
+
+        .weather-icon-wrap { font-size: 2.2rem; line-height: 1; }
+
+        .weather-temp {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--blue);
+            line-height: 1;
+        }
+        .weather-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+        .weather-loc { font-size: 0.68rem; color: var(--text-dim); }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            animation: fadeUp 0.45s ease-out both;
+            margin-bottom: 18px;
+        }
+        .card:hover { border-color: #b8d4f0; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .card:nth-child(1) { animation-delay: 0.04s; }
+        .card:nth-child(2) { animation-delay: 0.09s; }
+        .card:nth-child(3) { animation-delay: 0.14s; }
+        .card:nth-child(4) { animation-delay: 0.19s; }
+
+        /* ── Card label ── */
+        .card-label {
+            font-size: 0.67rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            padding: 16px 20px 13px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+
+        /* ── Diagram card ── */
+        .diagram-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 24px 0;
+        }
+
+        .diagram-wrapper {
+            position: relative;
+            width: 200px;
+            height: 390px;
+        }
+
+        .diagram-wrapper > img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            opacity: 0.9;
+            /* keep it visible on light bg */
         }
 
         #rectangle {
-            width: 300px;
-            height: 140px;
-            background-color: rgba(39, 144, 245, 0.9);
-            transition: height 0.5s;
-            align-self: flex-end;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg,
+                rgba(14,165,233,0.65) 0%,
+                rgba(56,189,248,0.82) 55%,
+                rgba(2,132,199,0.92) 100%);
+            transition: height 1.2s cubic-bezier(0.34,1.1,0.64,1);
             display: flex;
             justify-content: center;
+            align-items: flex-start;
+            padding-top: 9px;
+            overflow: hidden;
+            border-radius: 2px 2px 0 0;
+        }
+
+        #rectangle h3 {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            z-index: 2;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        /* Animated wave at water surface */
+        .wave-svg {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: calc(100% + 20px);
+            height: 20px;
+            z-index: 1;
+        }
+
+        /* ── Gauge bar ── */
+        .gauge-row {
+            display: flex;
             align-items: center;
+            gap: 10px;
+            padding: 14px 20px 18px;
+        }
+        .gauge-label  { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+        .gauge-track  {
+            flex: 1;
+            height: 7px;
+            background: #dbe6f4;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--teal), var(--cyan), var(--blue-mid), var(--red));
+            transform-origin: left center;
+            transform: scaleX(0); /* Optimized scaleX instead of width */
+            transition: transform 1.2s cubic-bezier(0.34,1.1,0.64,1);
+            width: 100%;
+        }
+        .gauge-value { font-size: 0.78rem; font-weight: 700; color: var(--blue); white-space: nowrap; }
+
+        /* ── Stats row ── */
+        #countdown-bar-wrap { height: 3px; background: #e8f0fa; overflow: hidden; }
+        #countdown-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--blue-mid));
+            transform-origin: left center;
+            transform: scaleX(1); /* GPU-accelerated transform */
+            width: 100%;
         }
 
-        #statusData[data-status='Not Available for Work'] {
-            color: red;
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
         }
 
-        #statusData[data-status='Available for Work'] {
-            color: green;
+        .stat {
+            padding: 20px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-right: 1px solid var(--border);
+            transition: background 0.2s;
         }
+        .stat:last-child { border-right: none; }
+        .stat:hover { background: var(--surface-2); }
 
-        .center {
+        .stat-label {
+            font-size: 0.63rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+        .stat-value {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: var(--blue);
+            line-height: 1.05;
+        }
+        .stat-value.ok     { color: var(--green); font-size: 0.9rem; font-weight: 600; line-height: 1.4; }
+        .stat-value.danger { color: var(--red);   font-size: 0.9rem; font-weight: 600; line-height: 1.4; }
+        .stat-sub { font-size: 0.68rem; color: var(--text-muted); }
 
-  display: block;
+        /* ── Chart ── */
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            padding: 18px 20px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+        .chart-img-wrap { padding: 18px 18px 20px; position: relative; height: 320px; width: 100%; }
+        /* ── Footer ── */
+        footer {
+            text-align: center;
+            padding: 18px 0;
+            font-size: 0.74rem;
+            color: var(--text-muted);
+        }
+        footer a { color: var(--blue); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
 
-  margin-left: auto;
-
-  margin-right: auto;
-
-  width: 50%;
-
-}
-
+        /* ── Responsive ── */
+        @media (max-width: 680px) {
+            header { flex-direction: column; }
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            .stat { border-bottom: 1px solid var(--border); }
+            .page { padding: 0 14px 60px; }
+        }
+        @media (max-width: 420px) {
+            .stats-row { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <h1>Mikveh Real Time Water Level Forecasts</h1>
-    <div id="container">
-        <div id="rectangle"><h3>Rhine Water Level</h3></div>
+
+<div class="page">
+
+    <!-- Header -->
+    <header>
+        <div class="header-left">
+            <h1>Mikveh Water Level<br>Forecasts Cologne</h1>
+            <p>
+                <span class="live-dot"></span>
+                Live · Pegel Köln · updated every 5 min
+            </p>
+        </div>
+        <div class="weather-widget" id="weatherWidget">
+            <div class="weather-icon-wrap" id="weatherIcon">⏳</div>
+            <div>
+                <div class="weather-temp" id="weatherTemp">–</div>
+                <div class="weather-desc" id="weatherDesc">Loading…</div>
+                <div class="weather-loc">📍 Cologne</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Diagram card -->
+    <div class="card">
+        <div class="card-label">Water Level Visualisation – Mikveh Cologne</div>
+        <div class="diagram-inner">
+            <div class="diagram-wrapper">
+                <img src="img/pegel_photo.png" alt="Mikveh archaeological site diagram">
+                <div id="rectangle">
+                    <svg class="wave-svg" viewBox="0 0 300 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M0,10 C50,0 100,20 150,10 C200,0 250,20 300,10 L300,20 L0,20 Z" fill="rgba(14,165,233,0.65)">
+                            <animateTransform attributeName="transform" type="translate" from="-150,0" to="0,0" dur="3s" repeatCount="indefinite"/>
+                        </path>
+                    </svg>
+                    <h3>Rhine Water Level</h3>
+                </div>
+            </div>
+        </div>
+        <div class="gauge-row">
+            <span class="gauge-label">0 m</span>
+            <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+            <span class="gauge-label">5 m</span>
+            <span class="gauge-value" id="gaugeValue">–</span>
+        </div>
     </div>
-    <table id="veri-tablosu">
-        <thead>
-            <tr>
-                <th>Location</th>
-                <th>Rhine Water Level (m)</th>
-                <th>Mikveh Water Level(approx.)</th>
-                <th>Date-Time</th>
-                <th>Image</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Pegel Köln</td>
-                <td id="waterLevelData"></td>
-                <td id="mikvehWaterLevelData"></td>
-                <td id="dateTimeData"></td>
-                <td id="imageData"></td>
-                <td id="statusData"></td>
-            </tr>
-        </tbody>
-    </table>
-    <script>
-        const getDatas = async () => {
-            try {
-                const response = await fetch('/api/data');
-                const data = await response.json();
-                
-                const waterLevel = parseFloat(data.Hochwasserpegel.Pegel[0].replace(',', '.'));
-                const rectangle = document.getElementById('rectangle');
 
-                // Adjust the size of the rectangle based on the data
-                if (waterLevel > 1.2) {
-                    rectangle.style.height = '90px'; // Maximum height is 90px
-                } else {
-                    const newHeight = waterLevel * 75; // Example size calculation
-                    rectangle.style.height = `${newHeight}px`;
-                }
+    <!-- Stats row -->
+    <div class="card">
+        <div id="countdown-bar-wrap"><div id="countdown-bar"></div></div>
+        <div class="stats-row">
+            <div class="stat">
+                <span class="stat-label">Rhine Water Level</span>
+                <span class="stat-value" id="rhineStatValue">–<small style="font-size:1rem;font-weight:500;color:var(--text-muted)"> m</small></span>
+                <span class="stat-sub">Pegel Köln</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Mikveh Level (approx.)</span>
+                <span class="stat-value" id="mikvehStatValue">–<small style="font-size:1rem;font-weight:500;color:var(--text-muted)"> m</small></span>
+                <span class="stat-sub">Rhine − 1.10 m offset</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Last Measurement</span>
+                <span class="stat-value" id="timeStatValue" style="font-size:0.88rem;font-weight:600;color:var(--text);">–</span>
+                <span class="stat-sub" id="nextUpdate">Next update in –:––</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Site Status</span>
+                <span class="stat-value" id="statusStatValue">–</span>
+                <span class="stat-sub">Threshold ≤ 1.20 m</span>
+            </div>
+        </div>
+    </div>
 
-                // Display other data
-                document.getElementById('dateTimeData').textContent = `${data.Hochwasserpegel.Datum[0]} - ${data.Hochwasserpegel.Uhrzeit[0]}`;
-                document.getElementById('waterLevelData').textContent = data.Hochwasserpegel.Pegel[0].replace('.', ','); 
-                const imgElement = document.createElement('img');
-                const imageName = data.Hochwasserpegel.Grafik[0];
-                imgElement.src = `img/${imageName}`;
-                imgElement.alt = 'Hochwasser Image';
-                document.getElementById('imageData').innerHTML = '';
-                document.getElementById('imageData').appendChild(imgElement);
+    <!-- 15-Day Rhine chart -->
+    <div class="card">
+        <div class="chart-title">🌊 Rhine Water Level – 15-Day Overview</div>
+        <div class="chart-img-wrap">
+            <canvas id="rhineChart"></canvas>
+        </div>
+    </div>
 
-                let status = "Not Available for Work";
-                if (waterLevel <= 1.2) {
-                    status = "Available for Work";
-                }
-                document.getElementById('statusData').textContent = status;
-                document.getElementById('statusData').setAttribute('data-status', status);
+</div><!-- /page -->
 
-                // Calculate and display Mikveh Water Level
-                const mikvehWaterLevel = waterLevel - 1.10; // Water level minus 1.1
-                document.getElementById('mikvehWaterLevelData').textContent = mikvehWaterLevel.toFixed(2); // Display with 2 decimal places
-            } catch (error) {
-                console.error('Data Error:', error);
+<footer>
+    Data: <a href="https://www.offenedaten-koeln.de/dataset/pegelstand-stadt-köln" target="_blank" rel="noopener">Offene Daten Köln</a>
+    &nbsp;·&nbsp; Weather: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>
+    &nbsp;·&nbsp; <a href="https://digitalheritagelab.com" target="_blank" rel="noopener">Digital Heritage Lab</a>
+</footer>
+
+<script>
+    /* ── WMO code → weather emoji ── */
+    function wmoIcon(code) {
+        if (code === 0)                        return { icon: '☀️',  desc: 'Clear sky' };
+        if (code === 1)                        return { icon: '🌤️', desc: 'Mainly clear' };
+        if (code === 2)                        return { icon: '⛅',  desc: 'Partly cloudy' };
+        if (code === 3)                        return { icon: '☁️',  desc: 'Overcast' };
+        if ([45,48].includes(code))            return { icon: '🌫️', desc: 'Fog' };
+        if ([51,53,55].includes(code))         return { icon: '🌦️', desc: 'Drizzle' };
+        if ([56,57].includes(code))            return { icon: '🌧️', desc: 'Freezing drizzle' };
+        if ([61,63,65].includes(code))         return { icon: '🌧️', desc: 'Rain' };
+        if ([66,67].includes(code))            return { icon: '🌧️', desc: 'Freezing rain' };
+        if ([71,73,75,77].includes(code))      return { icon: '❄️',  desc: 'Snow' };
+        if ([80,81,82].includes(code))         return { icon: '🌦️', desc: 'Rain showers' };
+        if ([85,86].includes(code))            return { icon: '🌨️', desc: 'Snow showers' };
+        if ([95,96,99].includes(code))         return { icon: '⛈️',  desc: 'Thunderstorm' };
+        return { icon: '🌡️', desc: 'Unknown' };
+    }
+
+    /* ── Fetch Cologne weather (Open-Meteo, no key) ── */
+    async function fetchWeather() {
+        try {
+            const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=50.938&longitude=6.960&current=temperature_2m,weather_code&timezone=Europe%2FBerlin');
+            const j = await r.json();
+            const { icon, desc } = wmoIcon(j.current.weather_code);
+            document.getElementById('weatherIcon').textContent = icon;
+            document.getElementById('weatherTemp').textContent = `${Math.round(j.current.temperature_2m)}°C`;
+            document.getElementById('weatherDesc').textContent = desc;
+        } catch {
+            document.getElementById('weatherIcon').textContent = '🌡️';
+            document.getElementById('weatherDesc').textContent = 'Unavailable';
+        }
+    }
+
+    /* ── Performance-optimized countdown bar using rAF ── */
+    const INTERVAL = 5 * 60 * 1000;
+    let lastFetch = Date.now();
+    let rAF_ID;
+
+    function tickCountdown() {
+        const elapsed = Date.now() - lastFetch;
+        const rem = Math.max(0, INTERVAL - elapsed);
+        
+        // Update text once per second to prevent unnecessary DOM writes
+        const s = Math.ceil(rem / 1000);
+        const mm = String(Math.floor(s / 60)).padStart(2,'0');
+        const ss = String(s % 60).padStart(2,'0');
+        const timeText = `Next update in ${mm}:${ss}`;
+        
+        const nextUpdateEl = document.getElementById('nextUpdate');
+        if (nextUpdateEl.textContent !== timeText) {
+            nextUpdateEl.textContent = timeText;
+        }
+
+        // Extremely smooth 60fps GPU scale bar
+        const ratio = rem / INTERVAL;
+        document.getElementById('countdown-bar').style.transform = `scaleX(${ratio})`;
+        
+        rAF_ID = requestAnimationFrame(tickCountdown);
+    }
+
+    /* ── Fetch Rhine water level ── */
+    async function getDatas() {
+        try {
+            const r    = await fetch('/api/data');
+            const data = await r.json();
+
+            const wl  = parseFloat(data.Hochwasserpegel.Pegel[0].replace(',','.'));
+            const dt  = `${data.Hochwasserpegel.Datum[0]} · ${data.Hochwasserpegel.Uhrzeit[0]}`;
+            const mvh = (wl - 1.10).toFixed(2);
+            const ok  = wl <= 1.2;
+
+            // Water fill animation (max 260 px visible)
+            document.getElementById('rectangle').style.height = `${Math.min(wl * 60, 260)}px`;
+
+            // GPU-accelerated Gauge bar (0–5 m)
+            const gaugeScale = Math.min(wl / 5, 1);
+            document.getElementById('gaugeFill').style.transform = `scaleX(${gaugeScale})`;
+            document.getElementById('gaugeValue').textContent = `${data.Hochwasserpegel.Pegel[0].replace('.',',')} m`;
+
+            // Stats row
+            document.getElementById('rhineStatValue').innerHTML =
+                `${data.Hochwasserpegel.Pegel[0].replace('.',',')}<small style="font-size:1rem;font-weight:500;color:var(--text-muted)"> m</small>`;
+            document.getElementById('mikvehStatValue').innerHTML =
+                `${mvh}<small style="font-size:1rem;font-weight:500;color:var(--text-muted)"> m</small>`;
+            document.getElementById('timeStatValue').textContent = dt;
+
+            const statusEl = document.getElementById('statusStatValue');
+            statusEl.textContent = ok ? 'Available for Work' : 'Not Available for Work';
+            statusEl.className   = 'stat-value ' + (ok ? 'ok' : 'danger');
+
+            lastFetch = Date.now();
+        } catch(e) {
+            console.error('Water level fetch error:', e);
+        }
+    }
+
+    /* ── Render Interactive Chart.js ── */
+    async function renderChart() {
+        try {
+            // Corrected Station ID for Cologne: a6ee8177-107b-47dd-bcfd-30960ccc6e9c
+            const ST_ID = 'a6ee8177-107b-47dd-bcfd-30960ccc6e9c';
+            
+            // Fetch History (W) and Forecast (WV) in parallel
+            const [rHist, rCast] = await Promise.all([
+                fetch(`https://pegelonline.wsv.de/webservices/rest-api/v2/stations/${ST_ID}/W/measurements.json?start=P15D`),
+                fetch(`https://pegelonline.wsv.de/webservices/rest-api/v2/stations/${ST_ID}/WV/measurements.json`)
+            ]);
+            
+            const dataHist = await rHist.json();
+            const dataCast = await rCast.json();
+
+            // Parse historical WSV JSON (values are in cm, we want meters)
+            const ptsHist = dataHist.map(d => ({
+                x: new Date(d.timestamp),
+                y: d.value / 100 // cm to m
+            }));
+
+            // Parse predicting forecast
+            const ptsCast = dataCast.map(d => ({
+                x: new Date(d.timestamp),
+                y: d.value / 100
+            }));
+
+            // Connect the forecast line to the end of the history line seamlessly
+            if (ptsHist.length > 0 && ptsCast.length > 0) {
+                ptsCast.unshift(ptsHist[ptsHist.length - 1]);
             }
-        };
 
-        setInterval(getDatas, 5 * 60 * 1000);
-        getDatas();
-    </script>
+            // Create Threshold dataset (flat line at 2.30m Rhine = 1.20m Mikveh)
+            const firstX = ptsHist[0]?.x || Date.now();
+            const lastX = ptsCast[ptsCast.length - 1]?.x || ptsHist[ptsHist.length - 1]?.x;
+            const thresholdPoints = [
+                { x: firstX, y: 2.30 },
+                { x: lastX, y: 2.30 }
+            ];
 
-    <p>&nbsp;</p>
-    <blockquote>
+            const ctx = document.getElementById('rhineChart').getContext('2d');
+            
+            // Historical Blue Gradient
+            const gradHist = ctx.createLinearGradient(0, 0, 0, 300);
+            gradHist.addColorStop(0, 'rgba(14, 165, 233, 0.4)');
+            gradHist.addColorStop(1, 'rgba(14, 165, 233, 0.0)');
+            
+            // Forecast Orange Gradient
+            const gradCast = ctx.createLinearGradient(0, 0, 0, 300);
+            gradCast.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+            gradCast.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
 
-  <blockquote>
+            // Destroy previous chart instance if it exists (for HMR or re-renders)
+            if (window.rhineChartInstance) window.rhineChartInstance.destroy();
 
-    <h1 class="center">&nbsp;Rhine Water Level Overview Graphic</h1>
+            window.rhineChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Rhine Level Past 15-Days (m)',
+                            data: ptsHist,
+                            borderColor: '#0ea5e9',
+                            backgroundColor: gradHist,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: '48-Hour Official Forecast (m)',
+                            data: ptsCast,
+                            borderColor: '#f59e0b',
+                            backgroundColor: gradCast,
+                            borderWidth: 2,
+                            borderDash: [5, 5], // dashed line for forecast
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Mikveh Critical Threshold (2.30m)',
+                            data: thresholdPoints,
+                            borderColor: '#dc2626',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)' }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'day', displayFormats: { day: 'dd.MM' } },
+                            grid: { color: '#e8f0fa', drawBorder: false },
+                            ticks: { color: '#64748b' }
+                        },
+                        y: {
+                            grid: { color: '#e8f0fa', drawBorder: false },
+                            ticks: { color: '#64748b', callback: (val) => val.toFixed(2) + 'm' }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Chart fetch error:', e);
+        }
+    }
 
-  </blockquote>
+    // Init
+    getDatas();
+    fetchWeather();
+    renderChart();
+    setInterval(getDatas, INTERVAL);
+    setInterval(fetchWeather, 30 * 60 * 1000);
+    tickCountdown(); // Starts the rAF loop
+</script>
 
-</blockquote>
-
-<p>&nbsp;</p>
-        <img src="https://pegelonline-int.wsv.de/webservices/rest-api/v2/stations/593647aa-9fea-43ec-a7d6-6476a76ae868/W/measurements.png?start=P15D&width=925&height=220" alt= "" width="925" height="220" class= "center"/>
-    
 </body>
 </html>
